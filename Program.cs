@@ -37,6 +37,7 @@ class Program
     
     static async Task Main(string[] args)
     {
+        Console.WriteLine("starting");
         var bot = new TelegramBotClient(_token);
         var me = await bot.GetMe();
         Console.WriteLine($"Bot started: {me.Username}");
