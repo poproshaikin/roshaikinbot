@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "roshaikinbot", "roshaikinbot\roshaikinbot.csproj", "{0CC7C144-A17B-4F3C-9016-E201CB59C367}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "roshaikinbot", "roshaikinbot.csproj", "{0CC7C144-A17B-4F3C-9016-E201CB59C367}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
