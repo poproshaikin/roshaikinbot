@@ -16,6 +16,8 @@ static class BotExtensions
             responseText,
             replyParameters: new ReplyParameters { MessageId = update.Message!.Id },
             cancellationToken: cancellationToken);
+        
+        Console.WriteLine($"Responded to {update.Message.From?.FirstName ?? "unknown"}: {responseText}          (chat id: {update.Message.Chat.Id})");
     }
     
     public static bool Matches(this string str, params string[] patterns)
@@ -32,8 +34,9 @@ static class BotExtensions
 
 class Program
 {
-    private static readonly string _token = "8035465554:AAErw3fVribIOSYIYOAwdByMobYQH5eQrQ0";
-    
+    private static readonly string _token = File.ReadAllText("../../../api_key");
+    private static readonly DateTime _startTime = DateTime.UtcNow;
+    private static readonly string _ourChatId = "-4285267963";
     
     static async Task Main(string[] args)
     {
@@ -47,45 +50,50 @@ class Program
             updateHandler: HandleUpdateAsync,
             errorHandler: HandleErrorAsync,
             cancellationToken: cts.Token
-        );    
-        
-        Console.WriteLine("Press any key to exit");
-        Console.ReadKey();
-        await cts.CancelAsync();
+        );
+
+        while (true)
+        {
+            string input = Console.ReadLine()!;
+
+            if (input == "Kill")
+            {
+                await cts.CancelAsync();
+                break;
+            }
+            else
+            {
+                await bot.SendMessage(_ourChatId, input, cancellationToken: cts.Token);
+            }
+        }
     }
     
     static async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
     {
-        if (update.Message != null)
+        if (update.Message != null && update.Message.Date >= _startTime)
         {
-            var chatId = update.Message.Chat.Id;
+            var sender = update.Message.From?.FirstName;
             var messageText = update.Message.Text;
+            
+            Console.WriteLine($"{sender ?? "unknown"}: {messageText}          (chat id: {update.Message.Chat.Id})");
 
             if (messageText.Matches("пиво", "пива", "пивчик", "пивко"))
             {
-                var random = new Random();
-                var fact = Replies.RandomBeerFacts[random.Next(Replies.RandomBeerFacts.Count)];
+                var fact = Replies.Random(Replies.BeerFacts);
                 await botClient.ReplyMessage(fact, update, cancellationToken);
             }
 
             if (messageText.Matches("шмаль", "шмали", "травчик", "ганджа", "ганжубас", "марихуана", "косяк", "блант",
                     "конопля", "тгк", "анаша", "водник", "сухой"))
             {
-                var random = new Random();
-                var fact = Replies.RandomWeedFacts[random.Next(Replies.RandomWeedFacts.Count)];
+                var fact = Replies.Random(Replies.WeedFacts);
                 await botClient.ReplyMessage(fact, update, cancellationToken);
             }
             
             if (messageText.Matches("привет", "здрасте", "здарова", "хай", "hello", "hi", "hey"))
             {
-                var random = new Random();
-                var greeting = Replies.Greetings[random.Next(Replies.Greetings.Count)];
+                var greeting = Replies.Random(Replies.Greetings);
                 await botClient.ReplyMessage(greeting, update, cancellationToken);
-            }
-
-            if (messageText.Matches("хуй", "гандон", "пидар", "пидор"))
-            {
-                await botClient.ReplyMessage("Сам такой!", update, cancellationToken);
             }
         }
     }
