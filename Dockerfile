@@ -5,10 +5,10 @@ WORKDIR /app
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["roshaikinbot/roshaikinbot.csproj", "roshaikinbot/"]
-RUN dotnet restore "roshaikinbot/roshaikinbot.csproj"
+COPY ["roshaikinbot.csproj", "./"]
+RUN dotnet restore "roshaikinbot.csproj"
 COPY . .
-WORKDIR "/src/roshaikinbot"
+WORKDIR "/src/"
 RUN dotnet build "roshaikinbot.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
