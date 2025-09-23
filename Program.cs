@@ -4,115 +4,14 @@ using Telegram.Bot.Types;
 
 namespace roshaikinbot;
 
-static class BotExtensions
-{
-    public static async Task ReplyMessage(
-        this ITelegramBotClient botClient, 
-        string responseText, 
-        Update update, 
-        CancellationToken cancellationToken)
-    {
-        await botClient.SendMessage(
-            update.Message!.Chat.Id,
-            responseText,
-            replyParameters: new ReplyParameters { MessageId = update.Message!.Id },
-            cancellationToken: cancellationToken);
-        
-        Console.WriteLine();
-        Console.WriteLine($"(chat id: {update.Message.Chat.Id})");
-        Console.WriteLine($"Responded to {update.Message.From?.FirstName ?? "unknown"}: {responseText}");
-    }
-    
-    public static async Task ReplyMessage(
-        this ITelegramBotClient botClient,
-        List<string> dictionary, 
-        Update update,
-        CancellationToken cancellationToken)
-    {
-        string responseText = Dictionary.Random(dictionary);
-        
-        await botClient.SendMessage(
-            update.Message!.Chat.Id,
-            responseText,
-            replyParameters: new ReplyParameters { MessageId = update.Message.Id },
-            cancellationToken: cancellationToken);
-        
-        Console.WriteLine();
-        Console.WriteLine($"(chat id: {update.Message.Chat.Id})");
-        Console.WriteLine($"Responded: {responseText}");
-    }
-
-    public static async Task ReactToInsult(
-        this ITelegramBotClient botClient,
-        string insult,
-        Update update,
-        CancellationToken cancellationToken)
-    {
-        User sender = update.Message!.From!;
-        if (insult.Matches(Dictionary.Insults))
-        {
-            if (sender.Username == "vvoolodyaa")
-            {
-                await botClient.ReplyMessage(Dictionary.InsultVolodya, update, cancellationToken);
-            }
-            if (sender.Username == "poproshaikin")
-            {
-                await botClient.ReplyMessage(Dictionary.InsultStas, update, cancellationToken);
-            }
-
-            if (sender.Username == "dennisorl")
-            {
-                await botClient.ReplyMessage(Dictionary.InsultDenis, update, cancellationToken);
-            }
-            else
-            {
-                await botClient.ReplyMessage("Сам ты " + insult, update, cancellationToken);
-            }
-        }
-    }
-    
-    public static async Task HandleDrunkenBeer(
-        this ITelegramBotClient botClient,
-        string thirdWord,
-        Update update,
-        Storage storage,
-        CancellationToken cancellationToken)
-    {
-        User sender = update.Message!.From!;
-        
-        // amount
-        var amountMl = thirdWord.ParseAmount();
-        if (amountMl is null)
-        {
-            await botClient.ReplyMessage(Dictionary.Bullshit, update, cancellationToken);
-            return;
-        }
-
-        var unit = thirdWord.ParseUnit();
-        if (!Dictionary.UnitConversions.TryGetValue(unit, out double conversionFactor))
-        {
-            await botClient.ReplyMessage(Dictionary.Bullshit, update, cancellationToken);
-            return;
-        }
-            
-        storage.AddDrunkenBeer(amountMl.Value, sender.Id, update.Message.Chat.Id);
-
-        await botClient.ReplyMessage(
-            $"Я запомнил: {sender.FirstName} выпил(a) {amountMl / conversionFactor}{unit} пива", 
-            update,
-            cancellationToken
-        );
-    }
-}
-
 class Program
 {
     private static readonly string _token = File.ReadAllText("../../../api_key");
     private static readonly DateTime _startTime = DateTime.UtcNow;
-    private static readonly string _ourChatId = "-4285267963";
+    private static readonly Storage _storage = new();
+    private const string _ourChatId = "-4285267963";
     private const string _address = "гаврик,";
     private const string _myName = "гаврик";
-    private static readonly Storage _storage = new();
     
     static async Task Main(string[] args)
     {
@@ -156,14 +55,13 @@ class Program
 
         Console.WriteLine();
         Console.WriteLine($"(chat id: {update.Message.Chat.Id})");
-        Console.WriteLine($"{senderName ?? "unknown"}: {messageText}");
-
+        Console.WriteLine($"{senderName}: {messageText}");
+        
         // if I am addressed
         if (messageText.ToLower().StartsWith(_address))
         {
             string sentence = messageText.ToLower()[_address.Length..].Trim();
             string[] words = sentence.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-
             // dont bother me
             if (words.Length == 0)
             {
@@ -177,12 +75,21 @@ class Program
             if (firstWord.Matches("сосать"))
             {
                 await botClient.ReplyMessage("Хочешь мне отсосать?", update, cancellationToken);
-                return;
+                return;            
+            }
+
+            if (firstWord.Matches("пошел", "пошол", "иди", "іді", "йди", "пошёл"))
+            {
+                if (words[1].Matches("нахуй", "нахер"))
+                {
+                    await botClient.ReactToInsult(update, cancellationToken);
+                    return;
+                }
             }
 
             if (firstWord.Matches(Dictionary.Insults))
             {
-                await botClient.ReactToInsult(words[0], update, cancellationToken);
+                await botClient.ReactToInsult(update, cancellationToken, words[0]);
                 return;
             }
 
@@ -190,7 +97,7 @@ class Program
             {
                 if (words[1].Matches(Dictionary.Insults))
                 {
-                    await botClient.ReactToInsult(words[1], update, cancellationToken);
+                    await botClient.ReactToInsult(update, cancellationToken, words[1]);
                     return;
                 }
             }
@@ -257,6 +164,12 @@ class Program
 
         // general responses
 
+        if (messageText == _myName)
+        {
+            await botClient.ReplyMessage(Dictionary.Random(Dictionary.Greetings), update, cancellationToken);
+            return;
+        }
+
         if (messageText.Matches("пиво", "пива", "пивчик", "пивко"))
         {
             var fact = Dictionary.Random(Dictionary.BeerFacts);
@@ -285,86 +198,4 @@ class Program
     {
         Console.WriteLine("Error handled: " + exception.Message);
     }
-}
-
-static class StringExtensions
-{
-    
-    public static bool Matches(this string str, params string[] patterns)
-    {
-        foreach (var pattern in patterns)
-        {
-            if (str.ToLower().Contains(pattern.ToLower()))
-                return true;
-        }
-        return false;
-    }
-    
-    public static bool Matches(this string str, IEnumerable<string> patterns)
-    {
-        return str.Matches(patterns.ToArray());
-    }
-
-    public static bool EndsWith(this string str, params string[] patterns)
-    {
-        foreach (var pattern in patterns)
-        {
-            if (str.ToLower().EndsWith(pattern.ToLower()))
-                return true;
-        }
-        return false;
-    }
-    
-    public static bool EndsWith(this string str, params char[] patterns)
-    {
-        foreach (var pattern in patterns)
-        {
-            if (str.ToLower().EndsWith(pattern.ToString().ToLower()))
-                return true;
-        }
-        return false;
-    }
-
-    public static bool EndsWith(this string str, IEnumerable<string> patterns)
-    {
-        return str.EndsWith(patterns.ToArray());
-    }
-    
-    public static double? ParseAmount(this string str)
-    {
-        str = str.ToLower().Trim();
-        int i = 0;
-        while (i < str.Length && ("1234567890.,".Contains(str[i])))
-            i++;
-
-        if (i == 0)
-            return null;
-
-        string amountStr = str[..i].Replace(',', '.');
-        if (!double.TryParse(amountStr, out double amount))
-            return null;
-
-        string unit = str[i..].Trim();
-        if (Dictionary.UnitConversions.TryGetValue(unit, out double conversionFactor))
-        {
-            return amount * conversionFactor;
-        }
-
-        return null; // Unknown unit
-    }
-    
-    public static string? ParseUnit(this string str)
-    {
-        str = str.ToLower().Trim();
-        int i = 0;
-        while (i < str.Length && ("1234567890.,".Contains(str[i])))
-            i++;
-   
-        if (i == 0 || i == str.Length)
-            return null;
-   
-        string unit = str[i..].Trim();
-        return string.IsNullOrEmpty(unit) ? null : unit;
-    }
-    
 }
