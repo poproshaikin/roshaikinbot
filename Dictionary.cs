@@ -324,7 +324,7 @@ public static class Dictionary
         "Давай по-человечески"
     ];
 
-    public static readonly List<string> Insults =
+    public static readonly List<string> InsultNouns =
     [
         "лох",
         "долбаеб",
@@ -364,6 +364,45 @@ public static class Dictionary
         "хуїло",
         "сучка"
     ];
+    
+    public static readonly List<string> InsultAdjectives =
+    [
+        "ебаное",
+        "вонючее",
+        "гнилое",
+        "тупое",
+        "ты мамин",
+        "ты подрюченый",
+        "ты дроченый",
+        "ты конченый",
+        "ты охуевший",
+        "конченый",
+        "чмошный",
+        "дроченый",
+        "ти безсоромний",
+        "безсоромний",
+        "зухвалий",
+        "ти зухвалий",
+        "ниций",
+        "ти ниций",
+        "жалкий",
+        "ти жалкий",
+        "нiкчемний",
+        "привет от Ани"
+    ];
+
+    public static string GenerateInsult()
+    {
+        var random = new Random();
+        
+        int nounId = random.Next(0, InsultNouns.Count);
+        int adjId = random.Next(0, InsultAdjectives.Count);
+        string noun = InsultNouns[nounId];
+        string adj = InsultAdjectives[adjId];
+
+        bool firstNoun = random.Next(1, 3) == 1;
+        return firstNoun ? $"{noun} {adj}" : $"{adj} {noun}";
+    }
 
     public static readonly List<string> InsultStas =
     [
@@ -394,8 +433,24 @@ public static class Dictionary
         "За своей челкой следи, кучерявый",
         "Пиндос, вали на родину",
         "Никита, тебя в детстве собаки покусали?",
-        "Roseplug - анальная пробка с розочкой \ud83c\udf39", // Аня, респект!
+        "Aнальная пробка с розочкой \ud83c\udf39", // Аня, респект!
         "Никита, ты пидор, потому что ты пидор",
         "Чё прищурился?"
     ];
+
+    public static readonly List<string> RandomReplies =
+    [
+        "Ну и что?",
+        "Как день прошёл?",
+        "Чувырло",
+        "Винница - дар божий",
+        "Пацаны, я всё",
+    ];
+
+    public static string GenerateRandomReply()
+    {
+        var random = new Random();
+        int replyId = random.Next(0, RandomReplies.Count);
+        return RandomReplies[replyId];
+    }
 }

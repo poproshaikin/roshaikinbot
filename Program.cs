@@ -12,6 +12,8 @@ class Program
     private const string _ourChatId = "-4285267963";
     private const string _address = "гаврик,";
     private const string _myName = "гаврик";
+
+    private const double _randomResponseProbability = 0.10;
     
     static async Task Main(string[] args)
     {
@@ -87,7 +89,7 @@ class Program
                 }
             }
 
-            if (firstWord.Matches(Dictionary.Insults))
+            if (firstWord.Matches(Dictionary.InsultNouns))
             {
                 await botClient.ReactToInsult(update, cancellationToken, words[0]);
                 return;
@@ -95,7 +97,7 @@ class Program
 
             if (firstWord.Matches("ты", "ти"))
             {
-                if (words[1].Matches(Dictionary.Insults))
+                if (words[1].Matches(Dictionary.InsultNouns))
                 {
                     await botClient.ReactToInsult(update, cancellationToken, words[1]);
                     return;
@@ -190,6 +192,12 @@ class Program
             var greeting = Dictionary.Random(Dictionary.Greetings);
             await botClient.ReplyMessage(greeting, update, cancellationToken);
             return;
+        }
+
+        var random = new Random();
+        if (random.NextDouble() < _randomResponseProbability)
+        {
+            await botClient.ReplyMessage(Dictionary.GenerateRandomReply(), update, cancellationToken);
         }
     }
     

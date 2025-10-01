@@ -48,7 +48,7 @@ public static class BotExtensions
         string insult = "чертила ебаная")
     {
         User sender = update.Message!.From!;
-        if (insult.Matches(Dictionary.Insults))
+        if (insult.Matches(Dictionary.InsultNouns))
         {
             if (sender.Username == "vvoolodyaa")
             {
@@ -76,6 +76,14 @@ public static class BotExtensions
             
             await botClient.ReplyMessage("Сам ты " + insult, update, cancellationToken);
         }
+    }
+    
+    public static async Task Insult(
+        this ITelegramBotClient botClient,
+        Update update,
+        CancellationToken cancellationToken)
+    {
+        await botClient.ReplyMessage(Dictionary.GenerateInsult(), update, cancellationToken);
     }
     
     public static async Task HandleDrunkenBeer(
